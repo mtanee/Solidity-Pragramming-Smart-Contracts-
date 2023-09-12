@@ -1,68 +1,62 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+
 import "./IERC20.sol";
+contract Taneer is IERC20 {
+    string public name = "Taneer";
+    string public symbol = "T2";
+    uint8 public decimals = 18;
+    uint256 private _totalSupply;
+    address private _owner;
+    mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
-contract Token is  IERC20
-{
-    address Owner;
-    string CoinName;
-    string Symboll;
-    uint public TotalSupply;
-    uint public RemainingSupply;
-    mapping (address=>uint) public  BalanceOf;
-    mapping (address=>mapping(address=>uint)) public Allowancee;
-
-    modifier OnlyAdmin()
-    {
-        require(msg.sender==Owner, "You are not contract Owner");
-        _;
+    constructor(uint256 initialSupply) {
+        _totalSupply = initialSupply * 10**uint256(decimals);
+        _owner = msg.sender;
+        _balances[msg.sender] = _totalSupply;
+        emit Transfer(address(0),msg.sender,_totalSupply);
+        
     }
 
-    constructor(string memory _CoinName,uint _TotalSupply,string memory _symboll)
-    {
-        CoinName=_CoinName;
-        TotalSupply=_TotalSupply;
-        Symboll=_symboll;
-        Owner=msg.sender;
-        RemainingSupply=_TotalSupply;
-        BalanceOf[Owner]=RemainingSupply;
+    function totalSupply() public view override returns (uint256) {
+        return _totalSupply;
     }
 
-    function Balance_of(address _spender) public view returns(uint)
-    {
-        return BalanceOf[_spender];
+    function balanceOf(address account) public view override returns (uint256) {
+        return _balances[account];
     }
-    function Totalsupply() public view returns(uint)
-    {
-        return TotalSupply;
-    }
-    function TransferTo(address _receipt, uint _Amount) public returns(bool)
-    {   
-        // require(RemainingSupply>0, "No Token Left");
-        require(BalanceOf[msg.sender]>=_Amount, "You Dont Have Enough Token");
-        RemainingSupply-=_Amount;
-        BalanceOf[_receipt]+=_Amount;
-        BalanceOf[Owner]=RemainingSupply;
+
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
+        require(recipient != address(0), "ERC20: Transfer to the zero address");
+        require(_balances[msg.sender] >= amount, "ERC20: Insufficient balance");
+
+        _balances[msg.sender] -= amount;
+        _balances[recipient] += amount;
+        emit Transfer(msg.sender, recipient, amount);
         return true;
     }
-    function TransferFrom(address _spender, address _receipt, uint _amount) public
-    {
-        require(Allowancee[_spender][msg.sender]>=_amount,"you don't have enough token allocated to send");
-        Allowancee[_spender][msg.sender]-=_amount;
-        RemainingSupply-=_amount;
-        BalanceOf[Owner]=RemainingSupply;
-        BalanceOf[_receipt]+=_amount;
+
+    function allowance(address owner, address spender) public view override returns (uint256) {
+        return _allowances[owner][spender];
     }
 
-    function Allowance(address _owner,address _spender) public view returns(uint)
-    {
-        return Allowancee[_owner][_spender];
+    function approve(address spender, uint256 amount) public override returns (bool) {
+        _allowances[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
     }
 
-    function Approve(address _spender,uint _amount) public
-    {
-        require(BalanceOf[msg.sender]>=_amount, "You dont have enough token to allow");
-        Allowancee[msg.sender][_spender]+=_amount;
-    } 
+    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
+        require(sender != address(0), "ERC20: Transfer from the zero address");
+        require(recipient != address(0), "ERC20: Transfer to the zero address");
+        require(_balances[sender] >= amount, "ERC20: Insufficient balance");
+        require(_allowances[sender][msg.sender] >= amount, "ERC20: Allowance exceeded");
 
+        _balances[sender] -= amount;
+        _balances[recipient] += amount;
+        _allowances[sender][msg.sender] -= amount;
+        emit Transfer(sender, recipient, amount);
+        return true;
+    }
 }
